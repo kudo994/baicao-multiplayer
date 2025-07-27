@@ -1,16 +1,24 @@
-// server logic placeholder
 // server.js
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
+// ✅ Phục vụ các file tĩnh trong thư mục 'public'
 app.use(express.static('public'));
 
+// ✅ Route chính để trả về index.html khi truy cập '/'
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
+// Dữ liệu phòng game
 const rooms = {};
 
 function shuffleDeck() {
@@ -56,6 +64,7 @@ function compareHands(a, b) {
   return 0;
 }
 
+// Kết nối Socket.IO
 io.on('connection', (socket) => {
   console.log(`🔌 New connection: ${socket.id}`);
 
@@ -125,13 +134,11 @@ io.on('connection', (socket) => {
     const fromIndex = fromPlayer.nemRequest.index;
     const toIndex = Math.floor(Math.random() * 3);
 
-    // Swap cards
     const temp = fromPlayer.cards[fromIndex];
     fromPlayer.cards[fromIndex] = toPlayer.cards[toIndex];
     toPlayer.cards[toIndex] = temp;
 
     fromPlayer.nemCount += 1;
-
     delete fromPlayer.nemRequest;
 
     io.to(roomId).emit('nem_success', {
@@ -139,7 +146,6 @@ io.on('connection', (socket) => {
       to: toPlayer.name
     });
 
-    // Cập nhật lại bài cho 2 người
     io.to(fromPlayer.id).emit('your_cards', fromPlayer.cards);
     io.to(toPlayer.id).emit('your_cards', toPlayer.cards);
   });
@@ -156,6 +162,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// Khởi động server
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
